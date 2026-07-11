@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Server (PHP)
+server/vendor/
+server/.env
+server/storage/logs/
+server/storage/framework/
+
+# Client (React)
+client/node_modules/
+client/dist/
+client/.env.local
+
+# Database
+db/data/
+*.sqlite
