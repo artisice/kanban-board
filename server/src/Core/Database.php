@@ -12,11 +12,11 @@ class Database
     public static function getConnection(): PDO
     {
         if (self::$instance === null) {
-            $host = getenv('PG_HOST') ?: '127.0.0.1';
-            $port = getenv('PG_PORT') ?: '5432';
-            $db   = getenv('PG_DBNAME') ?: 'kanban_db';
-            $user = getenv('PG_USER') ?: 'postgres';
-            $pass = getenv('PG_PASSWORD') ?: 'secret';
+            $host = $_ENV['PG_HOST'] ?? '127.0.0.1';
+            $port = $_ENV['PG_PORT'] ?? '5432';
+            $db   = $_ENV['PG_DBNAME'] ?? 'kanban_db';
+            $user = $_ENV['PG_USER'] ?? 'postgres';
+            $pass = $_ENV['PG_PASSWORD'] ?? 'secret';
 
             $dsn = "pgsql:host=$host;port=$port;dbname=$db";
 
