@@ -65,8 +65,8 @@ class AuthController
             return;
         }
 
-        $secretKey = getenv('JWT_SECRET') ?: 'default_secret';
-        $payload = [
+            $secretKey = $_ENV['JWT_SECRET'] ?? 'default_secret';
+            $payload = [
             'iss' => 'kanban_api',
             'sub' => $user['id'],
             'iat' => time(),
