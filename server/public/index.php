@@ -20,6 +20,7 @@ use App\Controllers\BoardController;
 use App\Controllers\ColumnController;
 use App\Controllers\CardController;
 use App\Controllers\CommentController;
+use App\Controllers\UserController;
 
  $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
  $method = $_SERVER['REQUEST_METHOD'];
@@ -48,5 +49,15 @@ use App\Controllers\CommentController;
  $router->addRoute('DELETE', '/comments/{id}', [CommentController::class, 'delete']);
 
  $router->addRoute('POST', '/boards/{id}/invite', [BoardController::class, 'invite']);
+
+ $router->addRoute('GET', '/me', [UserController::class, 'me']);
+ $router->addRoute('PUT', '/me', [UserController::class, 'updateMe']);
+
+ $router->addRoute('GET', '/boards/{id}/members', [BoardController::class, 'members']);
+ $router->addRoute('POST', '/boards/{id}/invite-link', [BoardController::class, 'generateInviteLink']);
+ $router->addRoute('POST', '/invitations/accept', [BoardController::class, 'acceptInvitation']);
+ $router->addRoute('PUT', '/boards/{id}/members', [BoardController::class, 'updateMemberRole']);
+
+ $router->addRoute('GET', '/boards/{id}/logs', [BoardController::class, 'logs']);
 
  $router->dispatch($method, $uri);

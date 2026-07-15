@@ -66,3 +66,5 @@ export const updateColumn = async (id, data) => {
 export const inviteUser = async (boardId, login, role) => {
     await api.post(`/boards/${boardId}/invite`, { login, role });
 };
+
+export const getAuditLogs = async (boardId) => (await api.get(`/boards/${boardId}/logs`)).data;

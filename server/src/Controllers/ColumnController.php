@@ -4,18 +4,21 @@ namespace App\Controllers;
 
 use App\Core\Database;
 use App\Middleware\AuthMiddleware;
+use App\Services\AuditService;
 use PDO;
 
 class ColumnController
 {
     private PDO $db;
+    private AuditService $audit;
 
     public function __construct()
     {
         $this->db = Database::getConnection();
+        $this->audit = new AuditService();
     }
 
-    private function checkBoardAccess(int $boardId): int
+    private function checkBoardAccess(int $boardId, bool $requireEditor = false): int
     {
         $userId = AuthMiddleware::check();
 
@@ -24,9 +27,11 @@ class ColumnController
         $role = $stmt->fetchColumn();
 
         if (!$role) {
-            http_response_code(403);
-            echo json_encode(['error' => 'Access denied to this board']);
-            exit;
+            Response::error('Access denied to this board', 403);
+        }
+
+        if ($requireEditor && $role === 'viewer') {
+            Response::error('You do not have edit permissions', 403);
         }
 
         return $userId;
@@ -34,7 +39,7 @@ class ColumnController
 
     public function create($boardId)
     {
-        $this->checkBoardAccess($boardId);
+        $this->checkBoardAccess($boardId, true);
         $data = json_decode(file_get_contents('php://input'), true);
 
         if (!isset($data['title'])) {
@@ -50,6 +55,8 @@ class ColumnController
         $stmt = $this->db->prepare("INSERT INTO columns (board_id, title, position) VALUES (?, ?, ?) RETURNING id");
         $stmt->execute([$boardId, $data['title'], $nextPosition]);
         $columnId = $stmt->fetchColumn();
+
+        $this->audit->logColumnCreate($boardId, $columnId, $data['title']);
 
         http_response_code(201);
         echo json_encode(['id' => $columnId, 'position' => $nextPosition, 'message' => 'Column created']);
@@ -77,6 +84,14 @@ class ColumnController
             return;
         }
 
+        $oldTitleStmt = $this->db->prepare("SELECT title, board_id FROM columns WHERE id = ?");
+        $oldTitleStmt->execute([$id]);
+        $colInfo = $oldTitleStmt->fetch();
+
+        if ($colInfo && $colInfo['title'] !== $data['title']) {
+            $this->audit->logColumnUpdate($colInfo['board_id'], $id, $colInfo['title'], $data['title']);
+        }
+
         echo json_encode(['message' => 'Column updated']);
     }
 
@@ -89,6 +104,14 @@ class ColumnController
             http_response_code(404);
             echo json_encode(['error' => 'Column not found']);
             return;
+        }
+
+        $infoStmt = $this->db->prepare("SELECT title, board_id FROM columns WHERE id = ?");
+        $infoStmt->execute([$id]);
+        $colInfo = $infoStmt->fetch();
+
+        if ($colInfo) {
+            $this->audit->logColumnDelete($colInfo['board_id'], $id, $colInfo['title']);
         }
 
         echo json_encode(['message' => 'Column deleted']);

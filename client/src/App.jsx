@@ -3,7 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import BoardsPage from './pages/BoardsPage';
-import BoardDetailPage from './pages/BoardDetailPage'; // <-- ДОБАВЛЕН ИМПОРТ
+import BoardDetailPage from './pages/BoardDetailPage';
+import ProfilePage from './pages/ProfilePage';
+import AcceptInvitePage from './pages/AcceptInvitePage';
 
 const queryClient = new QueryClient();
 
@@ -35,6 +37,9 @@ function App() {
                             <BoardDetailPage />
                         </ProtectedRoute>
                     } />
+
+                    <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                    <Route path="/invite/:token" element={<ProtectedRoute><AcceptInvitePage /></ProtectedRoute>} />
                 </Routes>
             </BrowserRouter>
         </QueryClientProvider>

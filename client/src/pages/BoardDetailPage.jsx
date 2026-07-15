@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getBoardById, updateCard, createColumn, inviteUser } from '../api/boardsApi';
+import { getBoardById, updateCard, createColumn } from '../api/boardsApi';
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import Column from '../components/Column';
 import CardModal from '../components/CardModal';
+import MembersModal from '../components/MembersModal';
+import { useEffect } from 'react';
+import { socket } from '../api/socket';
+import AuditLogModal from '../components/AuditLogModal';
 
 export default function BoardDetailPage() {
     const { id } = useParams();
@@ -12,6 +16,9 @@ export default function BoardDetailPage() {
     const queryClient = useQueryClient();
     const [activeCard, setActiveCard] = useState(null);
     const [selectedCard, setSelectedCard] = useState(null);
+    const [showMembers, setShowMembers] = useState(false);
+    const [showLogs, setShowLogs] = useState(false);
+    
     const [isAddingColumn, setIsAddingColumn] = useState(false);
     const [newColumnTitle, setNewColumnTitle] = useState('');
 
@@ -19,6 +26,41 @@ export default function BoardDetailPage() {
         queryKey: ['board', id],
         queryFn: () => getBoardById(id),
     });
+
+    useEffect(() => {
+    if (!id) return;
+
+    socket.emit('join_board', id);
+
+    const handleCardUpdate = (updatedCard) => {
+        queryClient.setQueryData(['board', id], (oldBoard) => {
+            if (!oldBoard) return oldBoard;
+            const newBoard = JSON.parse(JSON.stringify(oldBoard));
+            
+            for (let col of newBoard.columns) {
+                let idx = col.cards.findIndex(c => c.id == updatedCard.id);
+                if (idx !== -1) {
+                    col.cards.splice(idx, 1);
+                }
+            }
+
+            const targetCol = newBoard.columns.find(c => c.id == updatedCard.column_id);
+            if (targetCol) {
+                targetCol.cards.push(updatedCard);
+                
+                targetCol.cards.sort((a, b) => a.position - b.position);
+            }
+            
+            return newBoard;
+        });
+    };
+
+    socket.on('card_updated', handleCardUpdate);
+
+    return () => {
+        socket.off('card_updated', handleCardUpdate);
+    };
+}, [id, queryClient]);
 
     const updateCardMutation = useMutation({
         mutationFn: (data) => updateCard(data.id, data.body),
@@ -61,16 +103,6 @@ export default function BoardDetailPage() {
             queryClient.invalidateQueries({ queryKey: ['board', id] });
             setNewColumnTitle('');
             setIsAddingColumn(false);
-        }
-    });
-
-    const inviteMutation = useMutation({
-        mutationFn: (data) => inviteUser(id, data.login, data.role),
-        onSuccess: () => {
-            alert('Пользователь успешно добавлен!');
-        },
-        onError: (error) => {
-            alert(error.response?.data?.error || 'Ошибка приглашения');
         }
     });
 
@@ -128,74 +160,44 @@ export default function BoardDetailPage() {
 
     return (
         <div style={{ height: '100vh', backgroundColor: '#0079bf', color: 'white', padding: '20px', overflowY: 'hidden' }}>
-            
-            {/* ШАПКА ДОСКИ */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h1 style={{ margin: 0 }}>{board.title}</h1>
-                
-                {/* Блок кнопок справа */}
                 <div style={{ display: 'flex', gap: '10px' }}>
                     <button 
-                        onClick={() => {
-                            const login = prompt('Введите логин пользователя:');
-                            if (login) {
-                                inviteMutation.mutate({ login, role: 'editor' }); 
-                            }
-                        }} 
+                        onClick={() => setShowMembers(true)} 
                         style={{ padding: '8px 15px', cursor: 'pointer', background: 'white', border: 'none', borderRadius: '4px' }}
                     >
-                        + Поделиться
+                        Участники
                     </button>
                     <button 
-                        onClick={() => navigate('/boards')} 
+                        onClick={() => setShowLogs(true)} 
                         style={{ padding: '8px 15px', cursor: 'pointer', background: 'white', border: 'none', borderRadius: '4px' }}
                     >
+                        История
+                    </button>
+                    <button onClick={() => navigate('/boards')} style={{ padding: '8px 15px', cursor: 'pointer', background: 'white', border: 'none', borderRadius: '4px' }}>
                         Назад к доскам
                     </button>
                 </div>
             </div>
 
-            {/* ЗОНА DND (КАНБАН) */}
-            <DndContext 
-                sensors={sensors}
-                collisionDetection={closestCorners}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                dropAnimation={null}
-            >
+            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd} dropAnimation={null}>
                 <div style={{ display: 'flex', alignItems: 'flex-start' }}>
                     {board.columns.map(col => (
-                        <Column 
-                            key={col.id} 
-                            column={col} 
-                            cards={col.cards} 
-                            boardId={id} 
-                            onEditCard={setSelectedCard} 
-                        />
+                        <Column key={col.id} column={col} cards={col.cards} boardId={id} onEditCard={setSelectedCard} />
                     ))}
 
-                    {/* Блок добавления новой колонки */}
                     <div style={{ width: '280px' }}>
                         {isAddingColumn ? (
                             <form onSubmit={(e) => { e.preventDefault(); if(newColumnTitle.trim()) addColumnMutation.mutate(newColumnTitle); }} style={{ padding: '10px', backgroundColor: '#ebecf0', borderRadius: '8px' }}>
-                                <input 
-                                    autoFocus 
-                                    type="text" 
-                                    value={newColumnTitle} 
-                                    onChange={(e) => setNewColumnTitle(e.target.value)} 
-                                    placeholder="Введите заголовок колонки..." 
-                                    style={{ width: '90%', padding: '8px', border: 'none', borderRadius: '4px' }} 
-                                />
+                                <input autoFocus type="text" value={newColumnTitle} onChange={(e) => setNewColumnTitle(e.target.value)} placeholder="Введите заголовок колонки..." style={{ width: '90%', padding: '8px', border: 'none', borderRadius: '4px' }} />
                                 <div style={{ marginTop: '5px' }}>
                                     <button type="submit" style={{ padding: '6px 12px', background: '#0079bf', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Добавить колонку</button>
                                     <button type="button" onClick={() => setIsAddingColumn(false)} style={{ padding: '6px 12px', background: 'transparent', color: '#333', border: 'none', cursor: 'pointer' }}>Отмена</button>
                                 </div>
                             </form>
                         ) : (
-                            <button 
-                                onClick={() => setIsAddingColumn(true)} 
-                                style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.3)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', textAlign: 'left' }}
-                            >
+                            <button onClick={() => setIsAddingColumn(true)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.3)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', textAlign: 'left' }}>
                                 + Добавить еще одну колонку
                             </button>
                         )}
@@ -211,10 +213,13 @@ export default function BoardDetailPage() {
                 </DragOverlay>
             </DndContext>
 
-            {/* МОДАЛЬНОЕ ОКНО */}
             {selectedCard && (
                 <CardModal card={selectedCard} boardId={id} onClose={() => setSelectedCard(null)} />
             )}
+            {showMembers && (
+                <MembersModal boardId={id} onClose={() => setShowMembers(false)} />
+            )}
+            {showLogs && <AuditLogModal boardId={id} onClose={() => setShowLogs(false)} />}
         </div>
     );
 }
