@@ -1,4 +1,3 @@
-// client/src/components/SortableCard.jsx
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -24,19 +23,43 @@ export default function SortableCard({ card, onEdit }) {
         cursor: 'grab',
         color: '#333',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
+        flexDirection: 'column'
     };
 
     return (
         <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-            {card.title}
-            <button 
-                onClick={(e) => { e.stopPropagation(); onEdit(card); }} 
-                style={{ cursor: 'pointer', fontSize: '12px', background: 'transparent', border: 'none', color: '#5e6c84' }}
-            >
-                Изменить
-            </button>
+            <div>{card.title}</div>
+            
+            {card.assignees && card.assignees.length > 0 && (
+                <div style={{ display: 'flex', marginTop: '10px', alignItems: 'center' }}>
+                    {card.assignees.map(a => (
+                        <img 
+                            key={a.id} 
+                            src={a.avatar_url || 'https://via.placeholder.com/30'} 
+                            title={a.login} 
+                            style={{ 
+                                width: '28px', 
+                                height: '28px', 
+                                borderRadius: '50%', 
+                                border: '2px solid white', 
+                                marginRight: '-8px',
+                                objectFit: 'cover',
+                                zIndex: 1
+                            }} 
+                            alt="avatar" 
+                        />
+                    ))}
+                </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onEdit(card); }} 
+                    style={{ cursor: 'pointer', fontSize: '12px', background: 'transparent', border: 'none', color: '#5e6c84', padding: 0 }}
+                >
+                    Изменить
+                </button>
+            </div>
         </div>
     );
 }

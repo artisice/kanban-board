@@ -15,6 +15,7 @@ server/storage/framework/
 # Client (React)
 client/node_modules/
 client/dist/
+client/.env
 client/.env.local
 
 # Database
