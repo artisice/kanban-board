@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Core\Database;
+use App\Core\Request;
+use App\Core\Response;
 use Firebase\JWT\JWT;
 use PDO;
 
@@ -17,12 +19,10 @@ class AuthController
 
     public function register()
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = Request::getBody();
 
         if (!isset($data['login']) || !isset($data['password'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Login and password are required']);
-            return;
+            Response::error('Login and password are required', 400);
         }
 
         $login = $data['login'];
@@ -32,27 +32,21 @@ class AuthController
             $stmt = $this->db->prepare("INSERT INTO users (login, password_hash) VALUES (?, ?)");
             $stmt->execute([$login, $passwordHash]);
             
-            http_response_code(201);
-            echo json_encode(['message' => 'User registered successfully']);
+            Response::json(['message' => 'User registered successfully'], 201);
         } catch (\PDOException $e) {
-            if ($e->getCode() == 23505) { // Код ошибки уникальности в Postgres
-                http_response_code(409);
-                echo json_encode(['error' => 'Login already exists']);
-            } else {
-                http_response_code(500);
-                echo json_encode(['error' => 'Database error']);
+            if ($e->getCode() == 23505) {
+                Response::error('Login already exists', 409);
             }
+            Response::error('Database error', 500);
         }
     }
 
     public function login()
     {
-        $data = json_decode(file_get_contents('php://input'), true);
+        $data = Request::getBody();
 
         if (!isset($data['login']) || !isset($data['password'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Login and password are required']);
-            return;
+            Response::error('Login and password are required', 400);
         }
 
         $stmt = $this->db->prepare("SELECT * FROM users WHERE login = ?");
@@ -60,13 +54,11 @@ class AuthController
         $user = $stmt->fetch();
 
         if (!$user || !password_verify($data['password'], $user['password_hash'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Invalid credentials']);
-            return;
+            Response::error('Invalid credentials', 401);
         }
 
-            $secretKey = $_ENV['JWT_SECRET'] ?? 'default_secret';
-            $payload = [
+        $secretKey = $_ENV['JWT_SECRET'] ?? 'default_secret';
+        $payload = [
             'iss' => 'kanban_api',
             'sub' => $user['id'],
             'iat' => time(),
@@ -75,6 +67,6 @@ class AuthController
 
         $jwt = JWT::encode($payload, $secretKey, 'HS256');
 
-        echo json_encode(['token' => $jwt]);
+        Response::json(['token' => $jwt]);
     }
 }

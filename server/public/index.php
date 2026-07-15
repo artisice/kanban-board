@@ -47,4 +47,6 @@ use App\Controllers\CommentController;
  $router->addRoute('POST', '/cards/{cardId}/comments', [CommentController::class, 'create']);
  $router->addRoute('DELETE', '/comments/{id}', [CommentController::class, 'delete']);
 
+ $router->addRoute('POST', '/boards/{id}/invite', [BoardController::class, 'invite']);
+
  $router->dispatch($method, $uri);
