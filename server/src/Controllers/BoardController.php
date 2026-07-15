@@ -151,4 +151,41 @@ class BoardController
 
         echo json_encode(['message' => 'Board deleted']);
     }
+
+    public function invite($id)
+    {
+        $userId = AuthMiddleware::check();
+        $data = Request::getBody();
+
+        if (!isset($data['login']) || !isset($data['role'])) {
+            Response::error('Login and role are required', 400);
+        }
+
+        $ownerCheck = $this->db->prepare("SELECT 1 FROM boards WHERE id = ? AND owner_id = ?");
+        $ownerCheck->execute([$id, $userId]);
+        if (!$ownerCheck->fetch()) {
+            Response::error('Only owner can invite users', 403);
+        }
+
+        $userStmt = $this->db->prepare("SELECT id FROM users WHERE login = ?");
+        $userStmt->execute([$data['login']]);
+        $invitedUser = $userStmt->fetch();
+
+        if (!$invitedUser) {
+            Response::error('User not found', 404);
+        }
+
+        try {
+            $stmt = $this->db->prepare("
+                INSERT INTO user_roles (user_id, board_id, role) 
+                VALUES (?, ?, ?) 
+                ON CONFLICT (user_id, board_id) DO UPDATE SET role = EXCLUDED.role
+            ");
+            $stmt->execute([$invitedUser['id'], $id, $data['role']]);
+
+            Response::json(['message' => 'User invited successfully']);
+        } catch (\PDOException $e) {
+            Response::error('Database error', 500);
+        }
+    }
 }
