@@ -32,18 +32,11 @@ export default function CardModal({ card, boardId, onClose }) {
             onClose();
         },
         onError: (error) => {
-            if (error.response?.status === 409) {
-                alert('Конфликт! Карточка была изменена другим пользователем.');
-            } else if (error.response?.status === 403) {
-                alert('У вас нет прав на редактирование (вы читатель).');
-            } else {
-                alert('Ошибка сохранения: ' + (error.response?.data?.error || ''));
-            }
+            if (error.response?.status === 409) alert('Конфликт! Карточка была изменена другим пользователем.');
             queryClient.invalidateQueries({ queryKey: ['board', boardId] });
             onClose();
         }
     });
-
 
     const addCommentMutation = useMutation({
         mutationFn: (text) => createComment(card.id, text),
@@ -78,57 +71,87 @@ export default function CardModal({ card, boardId, onClose }) {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
             <div className="glass-modal" style={{ padding: '30px', width: '500px', maxHeight: '80vh', overflowY: 'auto', color: 'white' }} onClick={(e) => e.stopPropagation()}>
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} style={{ fontSize: '20px', fontWeight: 'bold', width: '100%', border: 'none', outline: 'none' }} />
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>Закрыть</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
+                    <input 
+                        type="text" 
+                        value={title} 
+                        onChange={(e) => setTitle(e.target.value)} 
+                        className="input-glass" 
+                        style={{ fontSize: '20px', fontWeight: 'bold', width: '100%', border: 'none', background: 'transparent' }} 
+                    />
+                    <button onClick={onClose} className="btn-glass" style={{ marginLeft: '15px' }}>Закрыть</button>
                 </div>
 
-                <div style={{ marginTop: '20px' }}>
-                    <label><b>Исполнители:</b></label><br/>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px' }}>
-                        {Array.isArray(members) && members.map(m => (
-                            <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={assigneeIds.includes(m.id)} 
-                                    onChange={() => toggleAssignee(m.id)} 
-                                />
-                                <img src={m.avatar_url || 'https://via.placeholder.com/20'} style={{ width: '20px', height: '20px', borderRadius: '50%' }} alt="avatar" />
-                                {m.login}
-                            </label>
-                        ))}
-                        {Array.isArray(members) && members.length === 0 && <p>Нет участников на доске</p>}
-                    </div>
-                </div>
-
-                <div style={{ marginTop: '20px' }}>
-                    <label><b>Дедлайн:</b></label><br/>
-                    <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} style={{ width: '100%', padding: '5px', marginTop: '5px' }} />
-                </div>
-
-                <div style={{ marginTop: '20px' }}>
-                    <label><b>Описание:</b></label><br/>
-                    <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows="4" style={{ width: '100%', padding: '5px', marginTop: '5px' }} />
-                </div>
-
-                <button onClick={handleSave} style={{ marginTop: '20px', padding: '10px 20px', background: '#0079bf', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Сохранить</button>
-
-                <hr style={{ margin: '20px 0' }} />
-
-                <h3>Комментарии</h3>
-                {Array.isArray(comments) && comments.map(c => (
-                    <div key={c.id} style={{ backgroundColor: '#f4f5f7', padding: '10px', borderRadius: '6px', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <b style={{ fontSize: '14px' }}>{c.author_login || 'Пользователь'}</b>
-                            <button onClick={() => deleteCommentMutation.mutate(c.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'red', fontSize: '12px' }}>Удалить</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Исполнители:</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                            {Array.isArray(members) && members.map(m => (
+                                <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255,255,255,0.05)', padding: '5px 10px', borderRadius: '6px' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={assigneeIds.includes(m.id)} 
+                                        onChange={() => toggleAssignee(m.id)} 
+                                        style={{ accentColor: '#2f80ed' }}
+                                    />
+                                    <img src={m.avatar_url || 'https://via.placeholder.com/20'} style={{ width: '20px', height: '20px', borderRadius: '50%' }} alt="avatar" />
+                                    <span style={{ fontSize: '14px' }}>{m.login}</span>
+                                </label>
+                            ))}
+                            {Array.isArray(members) && members.length === 0 && <p style={{ fontSize: '14px', opacity: 0.6 }}>Нет участников</p>}
                         </div>
-                        <p style={{ margin: '5px 0 0 0' }}>{c.text}</p>
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Дедлайн:</label>
+                        <input 
+                            type="date" 
+                            value={deadline} 
+                            onChange={(e) => setDeadline(e.target.value)} 
+                            className="input-glass" 
+                            style={{ width: '100%', colorScheme: 'dark' }} 
+                        />
+                    </div>
+
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', opacity: 0.8 }}>Описание:</label>
+                        <textarea 
+                            value={description} 
+                            onChange={(e) => setDescription(e.target.value)} 
+                            rows="4" 
+                            className="input-glass" 
+                            style={{ width: '100%', resize: 'vertical' }} 
+                        />
+                    </div>
+
+                    <button onClick={handleSave} className="btn-primary" style={{ width: '100%', marginTop: '10px' }}>
+                        Сохранить изменения
+                    </button>
+                </div>
+
+                <hr style={{ margin: '30px 0 20px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />
+
+                <h3 style={{ marginTop: 0, marginBottom: '15px' }}>Комментарии</h3>
+                {Array.isArray(comments) && comments.map(c => (
+                    <div key={c.id} style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                            <b style={{ fontSize: '14px' }}>{c.author_login || 'Пользователь'}</b>
+                            <button onClick={() => deleteCommentMutation.mutate(c.id)} className="btn-glass" style={{ padding: '2px 8px', fontSize: '12px', color: '#ff9999' }}>Удалить</button>
+                        </div>
+                        <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.9)' }}>{c.text}</p>
                     </div>
                 ))}
 
-                <form onSubmit={(e) => { e.preventDefault(); if(newComment.trim()) addCommentMutation.mutate(newComment); }} style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
-                    <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Напишите комментарий..." style={{ flexGrow: 1, padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }} />
-                    <button type="submit" style={{ padding: '8px 15px', background: '#5aac44', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Отправить</button>
+                <form onSubmit={(e) => { e.preventDefault(); if(newComment.trim()) addCommentMutation.mutate(newComment); }} style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                    <input 
+                        type="text" 
+                        value={newComment} 
+                        onChange={(e) => setNewComment(e.target.value)} 
+                        placeholder="Напишите комментарий..." 
+                        className="input-glass" 
+                        style={{ flexGrow: 1 }} 
+                    />
+                    <button type="submit" className="btn-primary" style={{ padding: '8px 15px' }}>Отправить</button>
                 </form>
             </div>
         </div>
