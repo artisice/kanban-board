@@ -239,7 +239,8 @@ class BoardController
         $stmt = $this->db->prepare("INSERT INTO invitations (token, board_id, role) VALUES (?, ?, ?)");
         $stmt->execute([$token, $id, $role]);
 
-        Response::json(['link' => "http://localhost:5173/invite/$token"]);
+        $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'http://localhost:5173';
+        Response::json(['link' => "$frontendUrl/invite/$token"]);
     }
 
     public function acceptInvitation()
