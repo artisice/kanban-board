@@ -29,7 +29,7 @@ export default function CardModal({ card, boardId, onClose }) {
         onSuccess: () => {
             alert('Сохранено!');
             queryClient.invalidateQueries({ queryKey: ['board', boardId] });
-            onClose(); // Закрываем только после успеха!
+            onClose();
         },
         onError: (error) => {
             if (error.response?.status === 409) {
@@ -75,8 +75,8 @@ export default function CardModal({ card, boardId, onClose }) {
     };
 
     return (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
-            <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '500px', maxHeight: '80vh', overflowY: 'auto', color: '#333' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
+            <div className="glass-modal" style={{ padding: '30px', width: '500px', maxHeight: '80vh', overflowY: 'auto', color: 'white' }} onClick={(e) => e.stopPropagation()}>
                 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                     <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} style={{ fontSize: '20px', fontWeight: 'bold', width: '100%', border: 'none', outline: 'none' }} />

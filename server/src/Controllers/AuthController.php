@@ -25,8 +25,18 @@ class AuthController
             Response::error('Login and password are required', 400);
         }
 
-        $login = $data['login'];
-        $passwordHash = password_hash($data['password'], PASSWORD_DEFAULT);
+        $login = trim($data['login']);
+        $password = $data['password'];
+
+        if (!filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            Response::error('Invalid email format', 400);
+        }
+
+        if (strlen($password) < 6 || !preg_match('/[A-Za-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+            Response::error('Password must be at least 6 chars and contain letters and numbers', 400);
+        }
+
+        $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
         try {
             $stmt = $this->db->prepare("INSERT INTO users (login, password_hash) VALUES (?, ?)");
@@ -35,7 +45,7 @@ class AuthController
             Response::json(['message' => 'User registered successfully'], 201);
         } catch (\PDOException $e) {
             if ($e->getCode() == 23505) {
-                Response::error('Login already exists', 409);
+                Response::error('User with this email already exists', 409);
             }
             Response::error('Database error', 500);
         }

@@ -34,65 +34,68 @@ export default function MembersModal({ boardId, onClose }) {
     };
 
     return (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
-            <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', width: '400px', color: '#333' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={onClose}>
+            <div className="glass-modal" style={{ padding: '30px', width: '450px', color: 'white' }} onClick={(e) => e.stopPropagation()}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
                     <h2 style={{ margin: 0 }}>Участники</h2>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>Закрыть</button>
+                    <button onClick={onClose} className="btn-glass" style={{ padding: '5px 15px' }}>Закрыть</button>
                 </div>
 
-                {isLoading ? <p>Загрузка...</p> : (
-                    Array.isArray(members) && members.length > 0 ? members.map(m => (
-                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '10px 0', padding: '5px', borderBottom: '1px solid #eee' }}>
-                            <img src={m.avatar_url || 'https://via.placeholder.com/30'} style={{ width: '30px', height: '30px', borderRadius: '50%' }} alt="avatar" />
-                            <span>{m.login}</span>
-                            
-                            <div style={{ marginLeft: 'auto' }}>
-                                {isOwner ? (
-                                    // Владелец видит выпадающий список
-                                    <select 
-                                        value={m.role} 
-                                        onChange={(e) => roleMutation.mutate({ userId: m.id, role: e.target.value })}
-                                        style={{ padding: '5px' }}
-                                    >
-                                        <option value="owner">Владелец</option>
-                                        <option value="editor">Редактор</option>
-                                        <option value="viewer">Читатель</option>
-                                    </select>
-                                ) : (
-                                    // Не владелец видит просто текст
-                                    <span style={{ color: '#666', fontSize: '14px' }}>
-                                        {translateRole(m.role)}
-                                    </span>
-                                )}
+                <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                    {isLoading ? <p>Загрузка...</p> : (
+                        Array.isArray(members) && members.length > 0 ? members.map(m => (
+                            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '15px', margin: '10px 0', padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                                <img src={m.avatar_url || 'https://via.placeholder.com/30'} style={{ width: '35px', height: '35px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)' }} alt="avatar" />
+                                <span style={{ fontWeight: '500' }}>{m.login}</span>
+                                
+                                <div style={{ marginLeft: 'auto' }}>
+                                    {isOwner ? (
+                                        <select 
+                                            value={m.role} 
+                                            onChange={(e) => roleMutation.mutate({ userId: m.id, role: e.target.value })}
+                                            style={{ padding: '6px', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '6px', outline: 'none' }}
+                                        >
+                                            <option value="owner" style={{color: 'black'}}>Владелец</option>
+                                            <option value="editor" style={{color: 'black'}}>Редактор</option>
+                                            <option value="viewer" style={{color: 'black'}}>Читатель</option>
+                                        </select>
+                                    ) : (
+                                        <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: '10px' }}>
+                                            {translateRole(m.role)}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )) : <p>Нет участников или ошибка загрузки</p>
-                )}
+                        )) : <p>Нет участников или ошибка загрузки</p>
+                    )}
+                </div>
 
                 {isOwner && (
                     <>
-                        <hr style={{ margin: '20px 0' }} />
-                        <h3>Пригласить по ссылке</h3>
+                        <hr style={{ margin: '25px 0', border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)' }} />
+                        <h3 style={{ marginBottom: '15px' }}>Пригласить по ссылке</h3>
                         <button 
                             onClick={() => inviteMutation.mutate('viewer')} 
                             disabled={inviteMutation.isPending}
-                            style={{ padding: '8px 15px', cursor: 'pointer', background: '#0079bf', color: 'white', border: 'none', borderRadius: '4px' }}
+                            className="btn-primary"
+                            style={{ width: '100%' }}
                         >
                             {inviteMutation.isPending ? 'Генерация...' : 'Сгенерировать ссылку (Читатель)'}
                         </button>
                         
                         {inviteLink && (
-                            <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
+                            <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
                                 <input 
                                     type="text" 
                                     value={inviteLink} 
                                     readOnly 
-                                    style={{ width: '100%', padding: '5px', borderRadius: '4px', border: '1px solid #ccc' }} 
+                                    className="input-glass"
+                                    style={{ flexGrow: 1 }} 
                                 />
                                 <button 
                                     onClick={() => { navigator.clipboard.writeText(inviteLink); alert('Скопировано!'); }} 
-                                    style={{ padding: '5px 10px', cursor: 'pointer' }}
+                                    className="btn-glass"
+                                    style={{ padding: '8px 15px' }}
                                 >
                                     Копировать
                                 </button>

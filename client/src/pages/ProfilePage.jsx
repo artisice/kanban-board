@@ -14,37 +14,66 @@ export default function ProfilePage() {
         onSuccess: () => {
             alert('Аватарка обновлена!');
             queryClient.invalidateQueries({ queryKey: ['me'] });
+            setAvatarUrl('');
         }
     });
 
-    if (isLoading) return <h2>Загрузка...</h2>;
+    if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '50px' }}>Загрузка...</h2>;
 
     return (
-        <div style={{ maxWidth: '400px', margin: '50px auto', textAlign: 'center' }}>
-            <h2>Профиль</h2>
-            <img 
-                src={user.avatar_url || 'https://via.placeholder.com/100'} 
-                alt="Avatar" 
-                style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover' }} 
-            />
-            <p>Логин: <b>{user.login}</b></p>
-            
-            <div style={{ marginTop: '20px' }}>
-                <input 
-                    type="text" 
-                    placeholder="Вставьте URL картинки" 
-                    value={avatarUrl} 
-                    onChange={(e) => setAvatarUrl(e.target.value)} 
-                    style={{ width: '100%', padding: '8px' }}
+        <div style={{ maxWidth: '450px', margin: '80px auto' }}>
+            <div className="glass" style={{ padding: '40px', textAlign: 'center' }}>
+                <h2 style={{ marginTop: 0, marginBottom: '30px' }}>Профиль</h2>
+                
+                <img 
+                    src={user.avatar_url || 'https://via.placeholder.com/120'} 
+                    alt="Avatar" 
+                    style={{ 
+                        width: '120px', 
+                        height: '120px', 
+                        borderRadius: '50%', 
+                        objectFit: 'cover', 
+                        border: '3px solid rgba(255,255,255,0.3)',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                        marginBottom: '20px'
+                    }} 
                 />
+                
+                <div style={{ marginBottom: '30px' }}>
+                    <p style={{ margin: 0, fontSize: '14px', opacity: 0.7 }}>Логин (Email)</p>
+                    <p style={{ margin: '5px 0 0 0', fontSize: '18px', fontWeight: '600' }}>{user.login}</p>
+                </div>
+                
+                <div style={{ textAlign: 'left', padding: '20px 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <label style={{ fontSize: '14px', opacity: 0.8, display: 'block', marginBottom: '10px' }}>
+                        Изменить аватар (URL):
+                    </label>
+                    <input 
+                        type="text" 
+                        placeholder="Вставьте ссылку на картинку" 
+                        value={avatarUrl} 
+                        onChange={(e) => setAvatarUrl(e.target.value)} 
+                        className="input-glass"
+                        style={{ width: '100%', marginBottom: '15px' }}
+                    />
+                    <button 
+                        onClick={() => mutation.mutate({ avatar_url: avatarUrl })} 
+                        className="btn-primary"
+                        disabled={!avatarUrl.trim()}
+                        style={{ width: '100%' }}
+                    >
+                        {mutation.isPending ? 'Сохранение...' : 'Сохранить аватар'}
+                    </button>
+                </div>
+
                 <button 
-                    onClick={() => mutation.mutate({ avatar_url: avatarUrl })} 
-                    style={{ marginTop: '10px', padding: '10px 20px', cursor: 'pointer' }}
+                    onClick={() => navigate('/boards')} 
+                    className="btn-glass"
+                    style={{ marginTop: '30px', width: '100%' }}
                 >
-                    Сохранить аватар
+                    Назад к доскам
                 </button>
             </div>
-            <button onClick={() => navigate('/boards')} style={{ marginTop: '30px', padding: '8px 15px' }}>Назад</button>
         </div>
     );
 }

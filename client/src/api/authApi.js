@@ -7,5 +7,5 @@ export const registerUser = async (userData) => {
 
 export const loginUser = async (userData) => {
     const response = await api.post('/login', userData);
-    return response.data; // возвращает { token: "..." }
+    return response.data;
 };

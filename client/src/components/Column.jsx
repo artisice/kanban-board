@@ -1,4 +1,3 @@
-// client/src/components/Column.jsx
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createCard, deleteColumn, updateColumn } from '../api/boardsApi';
@@ -41,28 +40,26 @@ export default function Column({ column, cards, boardId, onEditCard }) {
     };
 
     return (
-        <div style={{
-            backgroundColor: '#ebecf0', borderRadius: '8px', width: '280px',
-            minHeight: '400px', padding: '10px', marginRight: '15px',
-            display: 'flex', flexDirection: 'column'
-        }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 10px 10px' }}>
-                <h3 style={{ fontSize: '16px', color: '#333', margin: 0 }}>{column.title}</h3>
+        <div className="glass" style={{ width: '300px', minHeight: '450px', padding: '15px', marginRight: '20px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', padding: '0 5px' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', color: 'white', textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>{column.title}</h3>
                 <div>
                     <button onClick={() => {
                         const newTitle = prompt('Переименовать колонку:', column.title);
                         if (newTitle) updateColMutation.mutate({ title: newTitle, version: column.version });
-                    }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>Изменить</button>
+                    }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Изменить</button>
                     <button onClick={() => {
-                        if (confirm('Удалить колонку со всеми карточками?')) deleteColMutation.mutate();
-                    }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: 'red' }}>Удалить</button>
+                        if (confirm('Удалить колонку?')) deleteColMutation.mutate();
+                    }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: '#ff9999' }}>Удалить</button>
                 </div>
             </div>
 
             <div ref={setColumnRef} style={{ flexGrow: 1, minHeight: '50px' }}>
                 <SortableContext items={cards.map(c => `card-${c.id}`)} strategy={verticalListSortingStrategy}>
                     {cards.map(card => (
-                        <SortableCard key={card.id} card={card} onEdit={onEditCard} />
+                        <div style={{ marginBottom: '10px' }}>
+                            <SortableCard key={card.id} card={card} onEdit={onEditCard} />
+                        </div>
                     ))}
                 </SortableContext>
             </div>
@@ -70,18 +67,25 @@ export default function Column({ column, cards, boardId, onEditCard }) {
             {isAddingCard ? (
                 <form onSubmit={handleAddCard} style={{ marginTop: '10px' }}>
                     <input
-                        autoFocus type="text" value={newCardTitle}
+                        autoFocus
+                        type="text"
+                        value={newCardTitle}
                         onChange={(e) => setNewCardTitle(e.target.value)}
-                        placeholder="Введите заголовок..."
-                        style={{ width: '90%', padding: '8px', borderRadius: '4px', border: 'none', marginBottom: '5px' }}
+                        placeholder="Заголовок карточки..."
+                        className="input-glass"
+                        style={{ width: '100%', marginBottom: '10px' }}
                     />
-                    <div>
-                        <button type="submit" style={{ padding: '6px 12px', background: '#0079bf', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Добавить</button>
-                        <button type="button" onClick={() => setIsAddingCard(false)} style={{ padding: '6px 12px', background: 'transparent', color: '#333', border: 'none', cursor: 'pointer' }}>Отмена</button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button type="submit" className="btn-primary" style={{ padding: '8px 12px', fontSize: '14px' }}>Добавить</button>
+                        <button type="button" onClick={() => setIsAddingCard(false)} className="btn-glass" style={{ padding: '8px 12px', fontSize: '14px' }}>Отмена</button>
                     </div>
                 </form>
             ) : (
-                <button onClick={() => setIsAddingCard(true)} style={{ textAlign: 'left', padding: '8px', background: 'transparent', border: 'none', color: '#5e6c84', cursor: 'pointer', borderRadius: '4px' }}>
+                <button 
+                    onClick={() => setIsAddingCard(true)} 
+                    className="btn-glass"
+                    style={{ width: '100%', textAlign: 'left', padding: '10px', fontSize: '14px' }}
+                >
                     + Добавить карточку
                 </button>
             )}

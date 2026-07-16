@@ -9,7 +9,7 @@ class Response
         http_response_code($status);
         header('Content-Type: application/json');
         echo json_encode($data);
-        exit; // Чтобы код дальше не выполнялся
+        exit;
     }
 
     public static function error(string $message, int $status = 400): void

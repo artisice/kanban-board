@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getBoardById, updateCard, createColumn } from '../api/boardsApi';
@@ -6,9 +6,8 @@ import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestC
 import Column from '../components/Column';
 import CardModal from '../components/CardModal';
 import MembersModal from '../components/MembersModal';
-import { useEffect } from 'react';
-import { socket } from '../api/socket';
 import AuditLogModal from '../components/AuditLogModal';
+import { socket } from '../api/socket';
 
 export default function BoardDetailPage() {
     const { id } = useParams();
@@ -18,7 +17,6 @@ export default function BoardDetailPage() {
     const [selectedCard, setSelectedCard] = useState(null);
     const [showMembers, setShowMembers] = useState(false);
     const [showLogs, setShowLogs] = useState(false);
-    
     const [isAddingColumn, setIsAddingColumn] = useState(false);
     const [newColumnTitle, setNewColumnTitle] = useState('');
 
@@ -26,41 +24,6 @@ export default function BoardDetailPage() {
         queryKey: ['board', id],
         queryFn: () => getBoardById(id),
     });
-
-    useEffect(() => {
-    if (!id) return;
-
-    socket.emit('join_board', id);
-
-    const handleCardUpdate = (updatedCard) => {
-        queryClient.setQueryData(['board', id], (oldBoard) => {
-            if (!oldBoard) return oldBoard;
-            const newBoard = JSON.parse(JSON.stringify(oldBoard));
-            
-            for (let col of newBoard.columns) {
-                let idx = col.cards.findIndex(c => c.id == updatedCard.id);
-                if (idx !== -1) {
-                    col.cards.splice(idx, 1);
-                }
-            }
-
-            const targetCol = newBoard.columns.find(c => c.id == updatedCard.column_id);
-            if (targetCol) {
-                targetCol.cards.push(updatedCard);
-                
-                targetCol.cards.sort((a, b) => a.position - b.position);
-            }
-            
-            return newBoard;
-        });
-    };
-
-    socket.on('card_updated', handleCardUpdate);
-
-    return () => {
-        socket.off('card_updated', handleCardUpdate);
-    };
-}, [id, queryClient]);
 
     const updateCardMutation = useMutation({
         mutationFn: (data) => updateCard(data.id, data.body),
@@ -155,50 +118,61 @@ export default function BoardDetailPage() {
         });
     };
 
-    if (isLoading) return <h2>Загрузка доски...</h2>;
-    if (!board) return <h2>Доска не найдена</h2>;
+    useEffect(() => {
+        if (!id) return;
+        socket.emit('join_board', id);
+        const handleCardUpdate = (updatedCard) => {
+            queryClient.setQueryData(['board', id], (oldBoard) => {
+                if (!oldBoard) return oldBoard;
+                const newBoard = JSON.parse(JSON.stringify(oldBoard));
+                for (let col of newBoard.columns) {
+                    let idx = col.cards.findIndex(c => c.id == updatedCard.id);
+                    if (idx !== -1) col.cards.splice(idx, 1);
+                }
+                const targetCol = newBoard.columns.find(c => c.id == updatedCard.column_id);
+                if (targetCol) {
+                    targetCol.cards.push(updatedCard);
+                    targetCol.cards.sort((a, b) => a.position - b.position);
+                }
+                return newBoard;
+            });
+        };
+        socket.on('card_updated', handleCardUpdate);
+        return () => socket.off('card_updated', handleCardUpdate);
+    }, [id, queryClient]);
+
+    if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '50px' }}>Загрузка доски...</h2>;
+    if (!board) return <h2 style={{ textAlign: 'center', marginTop: '50px' }}>Доска не найдена</h2>;
 
     return (
-        <div style={{ height: '100vh', backgroundColor: '#0079bf', color: 'white', padding: '20px', overflowY: 'hidden' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h1 style={{ margin: 0 }}>{board.title}</h1>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button 
-                        onClick={() => setShowMembers(true)} 
-                        style={{ padding: '8px 15px', cursor: 'pointer', background: 'white', border: 'none', borderRadius: '4px' }}
-                    >
-                        Участники
-                    </button>
-                    <button 
-                        onClick={() => setShowLogs(true)} 
-                        style={{ padding: '8px 15px', cursor: 'pointer', background: 'white', border: 'none', borderRadius: '4px' }}
-                    >
-                        История
-                    </button>
-                    <button onClick={() => navigate('/boards')} style={{ padding: '8px 15px', cursor: 'pointer', background: 'white', border: 'none', borderRadius: '4px' }}>
-                        Назад к доскам
-                    </button>
+        <div style={{ height: '100vh', padding: '20px', overflowY: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', padding: '0 10px' }}>
+                <h1 style={{ margin: 0, fontSize: '28px', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>{board.title}</h1>
+                <div style={{ display: 'flex', gap: '15px' }}>
+                    <button onClick={() => setShowMembers(true)} className="btn-glass">Участники</button>
+                    <button onClick={() => setShowLogs(true)} className="btn-glass">История</button>
+                    <button onClick={() => navigate('/boards')} className="btn-glass">Назад</button>
                 </div>
             </div>
 
             <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd} dropAnimation={null}>
-                <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', paddingLeft: '10px' }}>
                     {board.columns.map(col => (
                         <Column key={col.id} column={col} cards={col.cards} boardId={id} onEditCard={setSelectedCard} />
                     ))}
 
-                    <div style={{ width: '280px' }}>
+                    <div style={{ width: '300px' }}>
                         {isAddingColumn ? (
-                            <form onSubmit={(e) => { e.preventDefault(); if(newColumnTitle.trim()) addColumnMutation.mutate(newColumnTitle); }} style={{ padding: '10px', backgroundColor: '#ebecf0', borderRadius: '8px' }}>
-                                <input autoFocus type="text" value={newColumnTitle} onChange={(e) => setNewColumnTitle(e.target.value)} placeholder="Введите заголовок колонки..." style={{ width: '90%', padding: '8px', border: 'none', borderRadius: '4px' }} />
-                                <div style={{ marginTop: '5px' }}>
-                                    <button type="submit" style={{ padding: '6px 12px', background: '#0079bf', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Добавить колонку</button>
-                                    <button type="button" onClick={() => setIsAddingColumn(false)} style={{ padding: '6px 12px', background: 'transparent', color: '#333', border: 'none', cursor: 'pointer' }}>Отмена</button>
+                            <form onSubmit={(e) => { e.preventDefault(); if(newColumnTitle.trim()) addColumnMutation.mutate(newColumnTitle); }} className="glass" style={{ padding: '15px' }}>
+                                <input autoFocus type="text" value={newColumnTitle} onChange={(e) => setNewColumnTitle(e.target.value)} placeholder="Заголовок колонки..." className="input-glass" style={{ width: '100%', marginBottom: '10px' }} />
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button type="submit" className="btn-primary" style={{ padding: '8px 12px', fontSize: '14px' }}>Добавить</button>
+                                    <button type="button" onClick={() => setIsAddingColumn(false)} className="btn-glass" style={{ padding: '8px 12px', fontSize: '14px' }}>Отмена</button>
                                 </div>
                             </form>
                         ) : (
-                            <button onClick={() => setIsAddingColumn(true)} style={{ width: '100%', padding: '10px', background: 'rgba(255,255,255,0.3)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', textAlign: 'left' }}>
-                                + Добавить еще одну колонку
+                            <button onClick={() => setIsAddingColumn(true)} className="btn-glass" style={{ width: '100%', padding: '15px', fontSize: '16px' }}>
+                                + Добавить колонку
                             </button>
                         )}
                     </div>
@@ -206,19 +180,15 @@ export default function BoardDetailPage() {
 
                 <DragOverlay>
                     {activeCard ? (
-                        <div style={{ padding: '10px', backgroundColor: 'white', color: 'black', borderRadius: '6px', boxShadow: '0 5px 10px rgba(0,0,0,0.3)' }}>
+                        <div className="glass-card" style={{ padding: '12px', color: 'white', opacity: 0.8 }}>
                             {activeCard.title}
                         </div>
                     ) : null}
                 </DragOverlay>
             </DndContext>
 
-            {selectedCard && (
-                <CardModal card={selectedCard} boardId={id} onClose={() => setSelectedCard(null)} />
-            )}
-            {showMembers && (
-                <MembersModal boardId={id} onClose={() => setShowMembers(false)} />
-            )}
+            {selectedCard && <CardModal card={selectedCard} boardId={id} onClose={() => setSelectedCard(null)} />}
+            {showMembers && <MembersModal boardId={id} onClose={() => setShowMembers(false)} />}
             {showLogs && <AuditLogModal boardId={id} onClose={() => setShowLogs(false)} />}
         </div>
     );
